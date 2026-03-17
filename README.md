@@ -25,6 +25,63 @@
 
 ### 安装
 
+#### 方法1：下载二进制文件（推荐）
+
+从 [Releases](https://github.com/liangach/napsec/releases) 页面下载对应系统的压缩包：
+
+| 系统 | 下载文件 | 说明 |
+|------|---------|------|
+| Windows 64位 | `napsec-windows-amd64.zip` | Windows 10/11 64位系统 |
+| Linux 64位 | `napsec-linux-amd64.tar.gz` | 大多数 Linux 发行版 |
+| macOS Intel | `napsec-darwin-amd64.tar.gz` | Intel 芯片的 Mac |
+| macOS Apple Silicon | `napsec-darwin-arm64.tar.gz` | M1/M2/M3 芯片的 Mac |
+
+##### Windows 用户安装说明
+
+**方式1：直接使用（简单）**
+```bash
+# 1. 下载并解压 napsec-windows-amd64.zip
+# 2. 重命名为 napsec.exe（可选）
+# 3. 在 exe 所在目录打开命令提示符或 PowerShell
+.\napsec.exe --help
+```
+
+**方式2：添加到环境变量（推荐，可在任意位置使用）**
+```bash
+# 1. 创建 NapSec 目录
+mkdir C:\napsec
+
+# 2. 将 napsec.exe 复制到 C:\napsec 目录
+
+# 3. 添加到系统 PATH（以管理员身份运行 PowerShell）
+[Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\napsec", [EnvironmentVariableTarget]::Machine)
+
+# 4. 重新打开命令行，现在可以在任意位置运行
+napsec --help
+```
+
+**图形界面添加 PATH 的方法：**
+1. 按 `Win + X` → 选择「系统」
+2. 点击「高级系统设置」
+3. 点击「环境变量」
+4. 在「系统变量」中找到 `Path`，双击编辑
+5. 点击「新建」，添加 `C:\napsec`
+6. 点击「确定」保存所有窗口
+
+##### macOS/Linux 用户安装说明
+```bash
+# 1. 下载并解压对应系统的压缩包
+# 2. 将二进制文件移动到系统 PATH 目录
+sudo mv napsec-* /usr/local/bin/napsec
+
+# 3. 添加执行权限
+chmod +x /usr/local/bin/napsec
+
+# 4. 现在可以在任意位置运行
+napsec --help
+```
+
+#### 方法2：从源码编译
 ```bash
 # 克隆仓库
 git clone https://github.com/liangach/napsec.git
@@ -32,6 +89,14 @@ cd napsec
 
 # 编译
 make build
+
+# 编译后的二进制文件在 build/ 目录
+./build/napsec --help
+```
+
+#### 方法3：使用 Go 安装
+```bash
+go install github.com/liangach/napsec/cmd/napsec@latest
 ```
 
 ### 基本用法
