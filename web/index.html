@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NapSec</title>
+    <link rel="stylesheet" href="styles/main.css" />
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<!-- ── 顶部导航 ── -->
+<nav class="navbar">
+    <div class="nav-brand">
+        <span class="shield-icon">🛡️</span>
+        <span class="brand-name">NapSec</span>
+        <span class="brand-sub">隐私数据管家</span>
+    </div>
+    <div class="nav-status">
+        <span id="statusDot" class="status-dot offline"></span>
+        <span id="statusText">连接中...</span>
+    </div>
+</nav>
+
+<!-- ── 主体内容 ── -->
+<main class="container">
+
+    <!-- 统计卡片行 -->
+    <section class="stats-grid">
+        <div class="stat-card accent-blue">
+            <div class="stat-icon">📁</div>
+            <div class="stat-body">
+                <div class="stat-value" id="totalScanned">--</div>
+                <div class="stat-label">累计扫描文件</div>
+            </div>
+        </div>
+        <div class="stat-card accent-green">
+            <div class="stat-icon">🔐</div>
+            <div class="stat-body">
+                <div class="stat-value" id="totalProtected">--</div>
+                <div class="stat-label">已保护文件</div>
+            </div>
+        </div>
+        <div class="stat-card accent-orange">
+            <div class="stat-icon">📅</div>
+            <div class="stat-body">
+                <div class="stat-value" id="todayProtected">--</div>
+                <div class="stat-label">今日保护</div>
+            </div>
+        </div>
+        <div class="stat-card accent-purple">
+            <div class="stat-icon">📋</div>
+            <div class="stat-body">
+                <div class="stat-value" id="totalLogs">--</div>
+                <div class="stat-label">审计记录</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 图表行 -->
+    <section class="charts-grid">
+        <div class="chart-card">
+            <h2 class="chart-title">操作类型分布</h2>
+            <div class="chart-wrap">
+                <canvas id="pieChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <h2 class="chart-title">最近 7 天保护趋势</h2>
+            <div class="chart-wrap">
+                <canvas id="lineChart"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <!-- 审计日志表格 -->
+    <section class="table-card">
+        <div class="table-header">
+            <h2 class="chart-title">最近审计记录</h2>
+            <button class="btn-refresh" onclick="app.refresh()">🔄 刷新</button>
+        </div>
+        <div class="table-wrap">
+            <table class="audit-table">
+                <thead>
+                <tr>
+                    <th>时间</th>
+                    <th>操作</th>
+                    <th>文件</th>
+                    <th>规则</th>
+                    <th>状态</th>
+                </tr>
+                </thead>
+                <tbody id="auditTableBody">
+                <tr>
+                    <td colspan="5" class="loading">加载中...</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</main>
+
+<!--  脚本  -->
+<script src="scripts/api.js"></script>
+<script src="scripts/charts.js"></script>
+<script src="scripts/app.js"></script>
+</body>
+</html>
