@@ -34,18 +34,18 @@
 
 从 [Releases](https://github.com/liangach/napsec/releases) 页面下载对应系统的压缩包：
 
-| 系统 | 下载文件 | 说明 |
-|------|---------|------|
-| Windows 64位 | `napsec-windows-amd64.zip` | Windows 10/11 64位系统 |
-| Linux 64位 | `napsec-linux-amd64.tar.gz` | 大多数 Linux 发行版 |
-| macOS Intel | `napsec-darwin-amd64.tar.gz` | Intel 芯片的 Mac |
-| macOS Apple Silicon | `napsec-darwin-arm64.tar.gz` | M1/M2/M3 芯片的 Mac |
+| 系统 | 下载文件                       | 说明 |
+|------|----------------------------|------|
+| Windows 64位 | `napsec-windows-amd64.exe` | Windows 10/11 64位系统 |
+| Linux 64位 | `napsec-linux-amd64`       | 大多数 Linux 发行版 |
+| macOS Intel | `napsec-darwin-amd64`      | Intel 芯片的 Mac |
+| macOS Apple Silicon | `napsec-darwin-arm64`      | M1/M2/M3 芯片的 Mac |
 
 ##### Windows 用户安装说明
 
 **方式1：直接使用（简单）**
 ```bash
-# 1. 下载并解压 napsec-windows-amd64.zip
+# 1. 下载并解压 napsec-windows-amd64.exe
 # 2. 重命名为 napsec.exe（可选）
 # 3. 在 exe 所在目录打开命令提示符或 PowerShell
 .\napsec.exe --help
@@ -124,24 +124,6 @@ napsec recover ~/.napsec/vault/secret.txt.napsec
 
 # 启动 Web 仪表盘
 napsec web --port 8080
-```
-
----
-
-## 项目结构
-
-```
-napsec/
-├── cmd/napsec/          # CLI 入口
-│   └── commands/          # 子命令
-├── internal/
-│   ├── monitor/           # 文件监控（fsnotify）
-│   ├── detector/          # 敏感信息检测（正则引擎）
-│   ├── executor/          # 加密执行（AES-256-GCM）
-│   ├── audit/             # 审计日志（Git）
-│   ├── core/              # 核心引擎 + Web API
-│   └── config/            # 配置管理
-└── web/                   # Web 仪表盘前端
 ```
 
 ---
