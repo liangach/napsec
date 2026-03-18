@@ -3,7 +3,7 @@
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?logo=go)](https://golang.org)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-blue)]()
-[![Version](https://img.shields.io/badge/Version-2.0.0-blue)]()
+[![Version](https://img.shields.io/badge/Version-0.2.0-blue)]()
 [![AI Support](https://img.shields.io/badge/AI-Multiple%20Providers-orange)]()
 
 > 本地优先、零依赖、开箱即用的文件隐私保护工具。  
