@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"github.com/liangach/napsec/internal/ai"
 	"github.com/liangach/napsec/internal/config"
 	"github.com/liangach/napsec/internal/core"
 	"github.com/spf13/cobra"
@@ -18,9 +19,21 @@ var startCmd = &cobra.Command{
 	Long: `启动 NapSec 文件监控服务，实时监测并保护敏感文件 
 
 示例:
-	napsec start ~/Documents
-	napsec start ~/Desktop --password password
-	napsec start . --dry-run`,
+  napsec start ~/Documents
+  napsec start ~/Desktop --password password
+  napsec start . --dry-run
+  
+  # 启用AI判断
+  napsec start ~/Documents --ai-enabled --ai-provider openai --ai-key sk-xxx
+  
+  # 使用Azure OpenAI
+  napsec start ~/Documents --ai-enabled --ai-provider azure --ai-endpoint https://xxx.openai.azure.com --ai-key xxx
+  
+  # 使用本地Ollama
+  napsec start ~/Documents --ai-enabled --ai-provider ollama --ai-endpoint http://localhost:11434/api/generate --ai-model llama2
+  
+  # 使用DeepSeek
+  napsec start ~/Documents --ai-enabled --ai-provider deepseek --ai-key sk-xxx`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: RunStart,
 }
@@ -30,6 +43,17 @@ func init() {
 	startCmd.Flags().StringP("vault", "v", "", "加密保险箱路径（默认：~/.napsec/vault）")
 	startCmd.Flags().BoolP("dry-run", "d", false, "演习模式，只检测不执行保护操作")
 	startCmd.Flags().IntP("workers", "w", 4, "并发线程数")
+	// AI相关标志
+	startCmd.Flags().Bool("ai-enabled", false, "启用AI大模型判断")
+	startCmd.Flags().String("ai-provider", "openai", "AI提供商 (openai, azure, anthropic, ollama, gemini, deepseek)")
+	startCmd.Flags().String("ai-endpoint", "", "AI API地址（可选）")
+	startCmd.Flags().String("ai-key", "", "AI API密钥")
+	startCmd.Flags().String("ai-model", "", "AI模型名称（可选）")
+	startCmd.Flags().Int("ai-max-tokens", 500, "AI最大token数")
+	startCmd.Flags().Int("ai-timeout", 30, "AI超时时间(秒)")
+	startCmd.Flags().Int("ai-sample-lines", 50, "AI采样行数")
+	startCmd.Flags().Int64("ai-max-file-size", 1024*1024, "AI处理的最大文件大小(bytes)")
+	startCmd.Flags().Float64("ai-temperature", 0.3, "AI温度参数(0-1)")
 }
 
 func RunStart(cmd *cobra.Command, args []string) error {
@@ -62,6 +86,18 @@ func RunStart(cmd *cobra.Command, args []string) error {
 	vaultPath, _ := cmd.Flags().GetString("vault")
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
 	workers, _ := cmd.Flags().GetInt("workers")
+
+	// 获取AI参数
+	aiEnabled, _ := cmd.Flags().GetBool("ai-enabled")
+	aiProvider, _ := cmd.Flags().GetString("ai-provider")
+	aiEndpoint, _ := cmd.Flags().GetString("ai-endpoint")
+	aiKey, _ := cmd.Flags().GetString("ai-key")
+	aiModel, _ := cmd.Flags().GetString("ai-model")
+	aiMaxTokens, _ := cmd.Flags().GetInt("ai-max-tokens")
+	aiTimeout, _ := cmd.Flags().GetInt("ai-timeout")
+	aiSampleLines, _ := cmd.Flags().GetInt("ai-sample-lines")
+	aiMaxFileSize, _ := cmd.Flags().GetInt64("ai-max-file-size")
+	aiTemperature, _ := cmd.Flags().GetFloat64("ai-temperature")
 
 	// 获取用户主目录
 	home, err := os.UserHomeDir()
@@ -107,6 +143,37 @@ func RunStart(cmd *cobra.Command, args []string) error {
 		AuditDir:  auditDir, // 这里一定要赋值！
 		Password:  password,
 		WebPort:   8080, // 设置默认值
+		AI: ai.AIConfig{
+			Enabled:       aiEnabled,
+			Provider:      ai.ProviderType(aiProvider),
+			Endpoint:      aiEndpoint,
+			APIKey:        aiKey,
+			Model:         aiModel,
+			MaxTokens:     aiMaxTokens,
+			Timeout:       aiTimeout,
+			SampleLines:   aiSampleLines,
+			MaxFileSize:   aiMaxFileSize,
+			Temperature:   aiTemperature,
+			CustomHeaders: make(map[string]string),
+		},
+	}
+
+	// 如果未指定模型，根据提供商设置默认值
+	if aiEnabled && cfg.AI.Model == "" {
+		switch cfg.AI.Provider {
+		case "openai":
+			cfg.AI.Model = "gpt-3.5-turbo"
+		case "azure":
+			cfg.AI.Model = "gpt-35-turbo"
+		case "anthropic":
+			cfg.AI.Model = "claude-3-haiku-20240307"
+		case "ollama":
+			cfg.AI.Model = "llama2"
+		case "gemini":
+			cfg.AI.Model = "gemini-pro"
+		case "deepseek":
+			cfg.AI.Model = "deepseek-chat"
+		}
 	}
 
 	// 调试输出
@@ -116,6 +183,11 @@ func RunStart(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  AuditDir: %s\n", cfg.AuditDir)
 	fmt.Printf("  Workers: %d\n", cfg.Workers)
 	fmt.Printf("  DryRun: %v\n", cfg.DryRun)
+	fmt.Printf("  AI Enabled: %v\n", cfg.AI.Enabled)
+	if cfg.AI.Enabled {
+		fmt.Printf("  AI Provider: %s\n", cfg.AI.Provider)
+		fmt.Printf("  AI Model: %s\n", cfg.AI.Model)
+	}
 
 	// 初始化引擎
 	engine, err := core.NewEngine(cfg)

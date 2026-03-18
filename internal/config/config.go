@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/liangach/napsec/internal/ai"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -23,6 +24,9 @@ type Config struct {
 
 	// Web 配置
 	WebPort int
+
+	// AI 配置
+	AI ai.AIConfig `yaml:"ai"`
 }
 
 // DefaultConfig 返回默认配置
@@ -39,6 +43,19 @@ func DefaultConfig() *Config {
 			VaultPath: filepath.Join(baseDir, "vault"),
 			AuditDir:  filepath.Join(baseDir, "audit"),
 			WebPort:   8080,
+			AI: ai.AIConfig{
+				Enabled:       false,
+				Provider:      "openai",
+				Endpoint:      "",
+				APIKey:        "",
+				Model:         "gpt-3.5-turbo",
+				MaxTokens:     500,
+				Timeout:       30,
+				SampleLines:   50,
+				MaxFileSize:   1024 * 1024, // 1MB
+				Temperature:   0.3,
+				CustomHeaders: make(map[string]string),
+			},
 		}
 	}
 

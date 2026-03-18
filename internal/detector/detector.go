@@ -2,10 +2,13 @@ package detector
 
 import (
 	"bytes"
+	"context"
 	"fmt"
+	"github.com/liangach/napsec/internal/ai"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // Match 检测匹配结果
@@ -18,19 +21,23 @@ type Match struct {
 
 // Detector 敏感信息检测器
 type Detector struct {
-	engine *RegexEngine
-	rules  []Rule
+	engine    *RegexEngine
+	rules     []Rule
+	aiClient  *ai.Client
+	aiEnabled bool
 }
 
 // NewDetector 创建检测器
-func NewDetector() (*Detector, error) {
+func NewDetector(aiClient *ai.Client) (*Detector, error) {
 	engine, err := NewRegexEngine(DefaultRules)
 	if err != nil {
 		return nil, fmt.Errorf("初始化规则引擎失败：%w", err)
 	}
 	return &Detector{
-		engine: engine,
-		rules:  DefaultRules,
+		engine:    engine,
+		rules:     DefaultRules,
+		aiClient:  aiClient,
+		aiEnabled: aiClient != nil && aiClient.IsEnabled(),
 	}, nil
 }
 
@@ -47,7 +54,74 @@ func (d *Detector) ScanFile(path string) ([]Match, error) {
 	if err != nil {
 		return nil, err
 	}
-	return contentMatches, nil
+	if len(contentMatches) > 0 {
+		fmt.Printf("[规则匹配] 内容敏感: %s (找到 %d 个匹配)\n",
+			filepath.Base(path), len(contentMatches))
+		return contentMatches, nil
+	}
+
+	// 3. 如果规则没有匹配，但AI启用，则用AI判断
+	if d.aiEnabled {
+		fmt.Printf("[AI判断] 规则未匹配，调用AI分析: %s\n", filepath.Base(path))
+		aiMatches, err := d.scanWithAI(path)
+		if err != nil {
+			fmt.Printf("[AI判断] 失败: %v\n", err)
+			return nil, nil // AI失败不影响原有逻辑
+		}
+		if len(aiMatches) > 0 {
+			fmt.Printf("[AI判断] 发现敏感内容: %s\n", filepath.Base(path))
+			return aiMatches, nil
+		}
+		fmt.Printf("[AI判断] 未发现敏感内容: %s\n", filepath.Base(path))
+	} else {
+		fmt.Printf("[检测] 无匹配，跳过: %s\n", filepath.Base(path))
+	}
+
+	return nil, nil
+}
+
+// scanWithAI 使用AI扫描文件
+func (d *Detector) scanWithAI(path string) ([]Match, error) {
+	// 读取文件内容
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	// 调用AI检测
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	resp, err := d.aiClient.Detect(ctx, filepath.Base(path), content)
+	if err != nil {
+		return nil, err
+	}
+
+	// AI认为敏感且置信度足够高
+	if resp.IsSensitive && resp.Confidence >= 70 {
+		reason := resp.Reason
+		if reason == "" {
+			reason = resp.Category
+		}
+		if reason == "" {
+			reason = "AI检测到敏感信息"
+		}
+
+		return []Match{
+			{
+				Rule: Rule{
+					Name:        fmt.Sprintf("AI检测: %s", reason),
+					Category:    "AI识别",
+					MinSeverity: 7,
+				},
+				FilePath: path,
+				Line:     0,
+				Content:  fmt.Sprintf("[AI识别] %s (置信度: %d%%)", reason, resp.Confidence),
+			},
+		}, nil
+	}
+
+	return nil, nil
 }
 
 // checkFileName 检查敏感文件名

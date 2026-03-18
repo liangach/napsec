@@ -3,6 +3,7 @@ package core
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/liangach/napsec/internal/ai"
 	"github.com/liangach/napsec/internal/audit"
 	"github.com/liangach/napsec/internal/config"
 	"github.com/liangach/napsec/internal/detector"
@@ -23,6 +24,7 @@ type Engine struct {
 	detector *detector.Detector
 	mover    *executor.Mover
 	logger   *audit.Logger
+	aiClient *ai.Client
 
 	// 实时统计（供 Web API 使用）
 	stats EngineStats
@@ -35,6 +37,8 @@ type EngineStats struct {
 	FilesProtected int       `json:"files_protected"`
 	LastEvent      string    `json:"last_event"`
 	IsRunning      bool      `json:"is_running"`
+	AIEnabled      bool      `json:"ai_enabled"`
+	AICalls        int       `json:"ai_calls"`
 }
 
 // NewEngine 创建核心引擎
@@ -62,8 +66,25 @@ func NewEngine(cfg *config.Config) (*Engine, error) {
 		return nil, fmt.Errorf("初始化目录失败: %w", err)
 	}
 
+	// 初始化AI客户端
+	var aiClient *ai.Client
+	var err error
+	if cfg.AI.Enabled {
+		fmt.Printf("AI大模型判断已启用 (提供商: %s, 模型: %s)\n",
+			cfg.AI.Provider, cfg.AI.Model)
+
+		aiClient, err = ai.NewClient(&cfg.AI)
+		if err != nil {
+			fmt.Printf("警告: AI客户端初始化失败: %v\n", err)
+			fmt.Println("将仅使用规则引擎继续运行")
+			aiClient = nil
+		}
+	} else {
+		fmt.Println("AI大模型判断未启用（仅使用规则引擎）")
+	}
+
 	// 初始化检测器
-	det, err := detector.NewDetector()
+	det, err := detector.NewDetector(aiClient)
 	if err != nil {
 		return nil, fmt.Errorf("初始化检测器失败: %w", err)
 	}
@@ -78,6 +99,10 @@ func NewEngine(cfg *config.Config) (*Engine, error) {
 		cfg:      cfg,
 		detector: det,
 		logger:   logger,
+		aiClient: aiClient,
+		stats: EngineStats{
+			AIEnabled: cfg.AI.Enabled && aiClient != nil,
+		},
 	}
 
 	// 只有提供密码时才初始化 Mover
